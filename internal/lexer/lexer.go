@@ -203,12 +203,12 @@ func tryGetKeyword(input string, ind int, row int, colm int) (token.Token, bool,
 	if n >= 4 {
 		keyword := input[ind : ind+4]
 		if keyword == "null" {
-			if ind+4 < n && !isDelim(input[ind+4]) {
+			if ind+4 < n && !isDelim(rune(input[ind+4])) {
 				return token.Token{}, false, ind, row, colm
 			}
 			return token.New(token.NULL, "null", row, colm), true, ind + 4, row, colm + 4
 		} else if keyword == "true" {
-			if ind+4 < n && !isDelim(input[ind+4]) {
+			if ind+4 < n && !isDelim(rune(input[ind+4])) {
 				return token.Token{}, false, ind, row, colm
 			}
 			return token.New(token.TRUE, "true", row, colm), true, ind + 4, row, colm + 4
@@ -216,7 +216,7 @@ func tryGetKeyword(input string, ind int, row int, colm int) (token.Token, bool,
 		} else if n >= 5 {
 			keyword := input[ind : ind+5]
 			if keyword == "false" {
-				if ind+5 < n && !isDelim(input[ind+5]) {
+				if ind+5 < n && !isDelim(rune(input[ind+5])) {
 					return token.Token{}, false, ind, row, colm
 				}
 				return token.New(token.FALSE, "false", row, colm), true, ind + 5, row, colm + 5
@@ -300,7 +300,7 @@ func tryGetNumber(input string, ind int, row int, colm int) (token.Token, bool, 
 		}
 	}
 	b = input[ind+i]
-	if isDelim(b) {
+	if isDelim(rune(b)) {
 		return token.New(token.NUMBER_LITERAL, input[ind:ind+i], row, colm), true, ind + i, row, colm + i
 	}
 
@@ -315,8 +315,17 @@ func isDigit(b rune) bool {
 	return '0' <= b && b <= '9'
 }
 
-func isDelim(b byte) bool {
+func isDelim(b rune) bool {
 	return b == ' ' || b == '\t' || b == '\r' || b == '\n' ||
 		b == '[' || b == ']' || b == '{' || b == '}' ||
 		b == ',' || b == ':' || b == '"'
+}
+
+func getUndefined(input string, ind int, row int, colm int) (token.Token, int, int, int) {
+	for i, b := range input[ind:] {
+		if isDelim(b) {
+			return token.New(token.UNDEFINED, input[ind:ind+i], row, colm), ind + i, row, colm + i
+		}
+	}
+	return token.New(token.UNDEFINED, input[ind:], row, colm), len(input), row, colm + len(input) - ind
 }

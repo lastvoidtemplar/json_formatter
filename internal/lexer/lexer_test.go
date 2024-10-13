@@ -398,7 +398,7 @@ func TestTryGetNumberWhole(t *testing.T) {
 	}
 
 	if tok.Literal != "-1234" {
-		t.Fatalf("tok.Literal was expected to be %s, but got %s", "false", tok.Literal)
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", "-1234", tok.Literal)
 	}
 
 	if ind != len(input) {
@@ -430,7 +430,7 @@ func TestTryGetNumberFraction(t *testing.T) {
 	}
 
 	if tok.Literal != "1234.25" {
-		t.Fatalf("tok.Literal was expected to be %s, but got %s", "false", tok.Literal)
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", "1234.25", tok.Literal)
 	}
 
 	if ind != len(input) {
@@ -462,7 +462,7 @@ func TestTryGetNumberSciNotion(t *testing.T) {
 	}
 
 	if tok.Literal != "1234e-3" {
-		t.Fatalf("tok.Literal was expected to be %s, but got %s", "false", tok.Literal)
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", "1234e-3", tok.Literal)
 	}
 
 	if ind != len(input) {
@@ -494,7 +494,7 @@ func TestTryGetNumberFractionStartingWithZeroAndHasSciNotion(t *testing.T) {
 	}
 
 	if tok.Literal != "0.1234e3" {
-		t.Fatalf("tok.Literal was expected to be %s, but got %s", "false", tok.Literal)
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", "0.1234e3", tok.Literal)
 	}
 
 	if ind != 13 {
@@ -620,5 +620,60 @@ func TestTryNumberInvalidNonDigitAfterExponent2(t *testing.T) {
 
 	if ind != 0 || row != 1 || colm != 1 {
 		t.Fatal("Pointers have moved")
+	}
+}
+
+func TestGetUndefined(t *testing.T) {
+	input := "dfsfsf3333"
+	ind, row, colm := 0, 1, 1
+	var tok token.Token
+
+	tok, ind, row, colm = getUndefined(input, ind, row, colm)
+
+	if tok.Type != token.UNDEFINED {
+		t.Fatalf("tok.Type was expected to be %d, but got %d", token.UNDEFINED, tok.Type)
+	}
+
+	if tok.Literal != input {
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", input, tok.Literal)
+	}
+
+	if ind != len(input) {
+		t.Fatalf("Wrong value for ind, expected %d, but got %d", len(input), ind)
+	}
+
+	if ind+1 != colm {
+		t.Fatalf("Colm was expected to be 1 more then ind (%d), but got %d", ind+1, colm)
+	}
+
+	if row != 1 {
+		t.Fatalf("Row was expected to remain 1, but got %d", row)
+	}
+}
+func TestGetUndefined1(t *testing.T) {
+	input := "dfsfsf3333\n"
+	ind, row, colm := 0, 1, 1
+	var tok token.Token
+
+	tok, ind, row, colm = getUndefined(input, ind, row, colm)
+
+	if tok.Type != token.UNDEFINED {
+		t.Fatalf("tok.Type was expected to be %d, but got %d", token.UNDEFINED, tok.Type)
+	}
+
+	if tok.Literal != input[:len(input)-1] {
+		t.Fatalf("tok.Literal was expected to be %s, but got %s", input[:len(input)-1], tok.Literal)
+	}
+
+	if ind != len(input)-1 {
+		t.Fatalf("Wrong value for ind, expected %d, but got %d", len(input), ind)
+	}
+
+	if ind+1 != colm {
+		t.Fatalf("Colm was expected to be 1 more then ind (%d), but got %d", ind+1, colm)
+	}
+
+	if row != 1 {
+		t.Fatalf("Row was expected to remain 1, but got %d", row)
 	}
 }
