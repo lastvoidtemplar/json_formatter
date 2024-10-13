@@ -111,11 +111,16 @@ func getToken(input string, ind int, row int, colm int) (token.Token, int, int, 
 		}
 	default:
 		var ok bool
+
 		tok, ok, ind, row, colm = tryGetString(input, ind, row, colm)
 		if ok {
 			return tok, ind, row, colm
 		}
-		//TODO try get number
+
+		tok, ok, ind, row, colm = tryGetString(input, ind, row, colm)
+		if ok {
+			return tok, ind, row, colm
+		}
 		//TODO get undefined
 	}
 
@@ -195,18 +200,29 @@ func isControlChar(b rune) bool {
 
 func tryGetKeyword(input string, ind int, row int, colm int) (token.Token, bool, int, int, int) {
 	n := len(input[ind:])
-	if n >= 5 {
-		keyword := input[ind : ind+5]
-		if keyword == "false" {
-			return token.New(token.FALSE, "false", row, colm), true, ind + 5, row, colm + 5
-		}
-	} else if n >= 4 {
+	if n >= 4 {
 		keyword := input[ind : ind+4]
 		if keyword == "null" {
+			if ind+4 < n && !isDelim(input[ind+4]) {
+				return token.Token{}, false, ind, row, colm
+			}
 			return token.New(token.NULL, "null", row, colm), true, ind + 4, row, colm + 4
 		} else if keyword == "true" {
+			if ind+4 < n && !isDelim(input[ind+4]) {
+				return token.Token{}, false, ind, row, colm
+			}
 			return token.New(token.TRUE, "true", row, colm), true, ind + 4, row, colm + 4
+
+		} else if n >= 5 {
+			keyword := input[ind : ind+5]
+			if keyword == "false" {
+				if ind+5 < n && !isDelim(input[ind+5]) {
+					return token.Token{}, false, ind, row, colm
+				}
+				return token.New(token.FALSE, "false", row, colm), true, ind + 5, row, colm + 5
+			}
 		}
+
 	}
 	return token.Token{}, false, ind, row, colm
 }
@@ -219,20 +235,73 @@ func tryGetNumber(input string, ind int, row int, colm int) (token.Token, bool, 
 	}
 
 	b := input[ind+i]
-	if !isDigit(rune(b)) {
+	if ind+i == n || !isDigit(rune(b)) {
 		return token.Token{}, false, ind, row, colm
 	}
 
 	if isDigitBiggerThanZero(b) {
-		for _, v := range input[ind:] {
+		for _, v := range input[ind+i:] {
 			if !isDigit(v) {
 				break
 			}
 			i++
 		}
 		if ind+i == n {
-			return token.New(token.NUMBER_LITERAL, input[ind:ind+i], row, colm), true, n, row, colm + n - ind
+			return token.New(token.NUMBER_LITERAL, input[ind:], row, colm), true, n, row, colm + n - ind
 		}
+	} else {
+		i++
+	}
+
+	b = input[ind+i]
+	if b == '.' {
+		i++
+
+		if ind+i == n || !isDigit(rune(input[ind+i])) {
+			return token.Token{}, false, ind, row, colm
+		}
+
+		for _, v := range input[ind+i:] {
+			if !isDigit(v) {
+				break
+			}
+			i++
+		}
+		if ind+i == n {
+			return token.New(token.NUMBER_LITERAL, input[ind:], row, colm), true, n, row, colm + n - ind
+		}
+	}
+
+	b = input[ind+i]
+	if b == 'e' || b == 'E' {
+		i++
+
+		if ind+i == n {
+			return token.Token{}, false, ind, row, colm
+		}
+
+		b = input[ind+i]
+		if b == '+' || b == '-' {
+			i++
+		}
+
+		if ind+i == n || !isDigit(rune(input[ind+i])) {
+			return token.Token{}, false, ind, row, colm
+		}
+
+		for _, v := range input[ind+i:] {
+			if !isDigit(v) {
+				break
+			}
+			i++
+		}
+		if ind+i == n {
+			return token.New(token.NUMBER_LITERAL, input[ind:], row, colm), true, n, row, colm + n - ind
+		}
+	}
+	b = input[ind+i]
+	if isDelim(b) {
+		return token.New(token.NUMBER_LITERAL, input[ind:ind+i], row, colm), true, ind + i, row, colm + i
 	}
 
 	return token.Token{}, false, ind, row, colm
@@ -244,4 +313,10 @@ func isDigitBiggerThanZero(b byte) bool {
 
 func isDigit(b rune) bool {
 	return '0' <= b && b <= '9'
+}
+
+func isDelim(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\r' || b == '\n' ||
+		b == '[' || b == ']' || b == '{' || b == '}' ||
+		b == ',' || b == ':' || b == '"'
 }
