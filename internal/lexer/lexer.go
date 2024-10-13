@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"io"
 	"iter"
-	"json_formatter/internal/token"
+
+	"github.com/lastvoidtemplar/json_formatter/internal/token"
 )
 
 func New(r io.Reader) iter.Seq[token.Token] {

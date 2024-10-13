@@ -2,9 +2,10 @@ package lexer
 
 import (
 	"bufio"
-	"json_formatter/internal/token"
 	"strings"
 	"testing"
+
+	"github.com/lastvoidtemplar/json_formatter/internal/token"
 )
 
 func TestScannerSplitFunc(t *testing.T) {
