@@ -111,12 +111,12 @@ func getToken(input string, ind int, row int, colm int) (token.Token, int, int, 
 	default:
 		var ok bool
 
-		tok, ok, ind, row, colm = tryGetString(input, ind, row, colm)
+		tok, ok, ind, row, colm = tryGetKeyword(input, ind, row, colm)
 		if ok {
 			return tok, ind, row, colm
 		}
 
-		tok, ok, ind, row, colm = tryGetString(input, ind, row, colm)
+		tok, ok, ind, row, colm = tryGetNumber(input, ind, row, colm)
 		if ok {
 			return tok, ind, row, colm
 		}
@@ -320,7 +320,14 @@ func isDelim(b rune) bool {
 
 func getUndefined(input string, ind int, row int, colm int) (token.Token, int, int, int) {
 	for i, b := range input[ind:] {
+		if i == 0 && b == '"' {
+			continue
+		}
 		if isDelim(b) {
+			if b == '"' && input[ind] == '"' {
+				// in case of invalid string. to grab closing quote
+				return token.New(token.UNDEFINED, input[ind:ind+i+1], row, colm), ind + i + 1, row, colm + i + 1
+			}
 			return token.New(token.UNDEFINED, input[ind:ind+i], row, colm), ind + i, row, colm + i
 		}
 	}

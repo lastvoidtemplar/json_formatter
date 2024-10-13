@@ -685,9 +685,11 @@ func TestLexer(t *testing.T) {
 	"human": true,
 	"hobbies": [
 		"Programming",
-		"Lol",
-		"Metal"
-	]
+		false,
+		42.69,
+		null
+	],
+	"indefi\'ned": 2.
 }`
 	lex := New(strings.NewReader(input))
 
@@ -705,6 +707,22 @@ func TestLexer(t *testing.T) {
 		{Type: token.COLON, Literal: ":", Row: 4, Colm: 9},
 		{Type: token.TRUE, Literal: "true", Row: 4, Colm: 11},
 		{Type: token.SEMICOLON, Literal: ",", Row: 4, Colm: 15},
+		{Type: token.STRING_LITERAL, Literal: "hobbies", Row: 5, Colm: 2},
+		{Type: token.COLON, Literal: ":", Row: 5, Colm: 11},
+		{Type: token.LEFT_SQUARE, Literal: "[", Row: 5, Colm: 13},
+		{Type: token.STRING_LITERAL, Literal: "Programming", Row: 6, Colm: 3},
+		{Type: token.SEMICOLON, Literal: ",", Row: 6, Colm: 16},
+		{Type: token.FALSE, Literal: "false", Row: 7, Colm: 3},
+		{Type: token.SEMICOLON, Literal: ",", Row: 7, Colm: 8},
+		{Type: token.NUMBER_LITERAL, Literal: "42.69", Row: 8, Colm: 3},
+		{Type: token.SEMICOLON, Literal: ",", Row: 8, Colm: 8},
+		{Type: token.NULL, Literal: "null", Row: 9, Colm: 3},
+		{Type: token.RIGHT_SQUARE, Literal: "]", Row: 10, Colm: 2},
+		{Type: token.SEMICOLON, Literal: ",", Row: 10, Colm: 3},
+		{Type: token.UNDEFINED, Literal: `"indefi\'ned"`, Row: 11, Colm: 2},
+		{Type: token.COLON, Literal: ":", Row: 11, Colm: 15},
+		{Type: token.UNDEFINED, Literal: `2.`, Row: 11, Colm: 17},
+		{Type: token.RIGHT_CURLY, Literal: "}", Row: 12, Colm: 1},
 	}
 	ind := 0
 	for tok := range lex {
@@ -719,11 +737,12 @@ func TestLexer(t *testing.T) {
 			t.Errorf("tok[%d].Row was expected to be %d, but got %d", ind, exp.Row, tok.Row)
 		}
 		if tok.Colm != exp.Colm {
-			t.Errorf("tok[%d].Row was expected to be %d, but got %d", ind, exp.Colm, tok.Colm)
+			t.Errorf("tok[%d].Colm was expected to be %d, but got %d", ind, exp.Colm, tok.Colm)
 		}
 		ind++
-		if ind == len(expected) {
-			break
-		}
+	}
+
+	if ind != len(expected) {
+		t.Errorf("Expected len was %d, but got %d", len(expected), ind)
 	}
 }
