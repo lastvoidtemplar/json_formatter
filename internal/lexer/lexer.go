@@ -151,7 +151,7 @@ func tryGetString(input string, ind int, row int, colm int) (token.Token, bool, 
 		}
 
 	}
-	return token.New(token.ERR, "the buffer was to small to close a string", row, colm), true, n, row, colm + n
+	return token.New(token.ERR, "the buffer was to small to close a string", row, colm), true, n, row, colm + n - ind
 }
 
 func tryGetEscape(input string, ind int) (int, bool) {
@@ -209,4 +209,39 @@ func tryGetKeyword(input string, ind int, row int, colm int) (token.Token, bool,
 		}
 	}
 	return token.Token{}, false, ind, row, colm
+}
+
+func tryGetNumber(input string, ind int, row int, colm int) (token.Token, bool, int, int, int) {
+	i := 0
+	n := len(input)
+	if input[ind] == '-' {
+		i++
+	}
+
+	b := input[ind+i]
+	if !isDigit(rune(b)) {
+		return token.Token{}, false, ind, row, colm
+	}
+
+	if isDigitBiggerThanZero(b) {
+		for _, v := range input[ind:] {
+			if !isDigit(v) {
+				break
+			}
+			i++
+		}
+		if ind+i == n {
+			return token.New(token.NUMBER_LITERAL, input[ind:ind+i], row, colm), true, n, row, colm + n - ind
+		}
+	}
+
+	return token.Token{}, false, ind, row, colm
+}
+
+func isDigitBiggerThanZero(b byte) bool {
+	return '1' <= b && b <= '9'
+}
+
+func isDigit(b rune) bool {
+	return '0' <= b && b <= '9'
 }
