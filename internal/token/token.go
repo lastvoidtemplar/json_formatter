@@ -4,6 +4,7 @@ type TokenType byte
 
 const (
 	UNDEFINED TokenType = iota
+	ERR
 
 	EOF
 
@@ -16,7 +17,8 @@ const (
 	RIGHT_CURLY
 
 	NULL
-	BOOL_LITERAL
+	TRUE
+	FALSE
 	NUMBER_LITERAL
 	STRING_LITERAL
 )
