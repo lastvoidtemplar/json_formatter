@@ -106,9 +106,8 @@ func getToken(input string, ind int, row int, colm int) (token.Token, int, int, 
 		tok, ok, ind, row, colm = tryGetString(input, ind, row, colm)
 		if ok {
 			return tok, ind, row, colm
-		} else {
-			//TODO get undefined
 		}
+		return getUndefined(input, ind, row, colm)
 	default:
 		var ok bool
 
@@ -121,10 +120,8 @@ func getToken(input string, ind int, row int, colm int) (token.Token, int, int, 
 		if ok {
 			return tok, ind, row, colm
 		}
-		//TODO get undefined
+		return getUndefined(input, ind, row, colm)
 	}
-
-	return token.New(token.UNDEFINED, "", row, colm), ind, row, colm
 }
 
 func tryGetString(input string, ind int, row int, colm int) (token.Token, bool, int, int, int) {

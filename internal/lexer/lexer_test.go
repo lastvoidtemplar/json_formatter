@@ -677,3 +677,53 @@ func TestGetUndefined1(t *testing.T) {
 		t.Fatalf("Row was expected to remain 1, but got %d", row)
 	}
 }
+
+func TestLexer(t *testing.T) {
+	input := `{
+	"name": "Name",
+	"age": 21,
+	"human": true,
+	"hobbies": [
+		"Programming",
+		"Lol",
+		"Metal"
+	]
+}`
+	lex := New(strings.NewReader(input))
+
+	expected := []token.Token{
+		{Type: token.LEFT_CURLY, Literal: "{", Row: 1, Colm: 1},
+		{Type: token.STRING_LITERAL, Literal: "name", Row: 2, Colm: 2},
+		{Type: token.COLON, Literal: ":", Row: 2, Colm: 8},
+		{Type: token.STRING_LITERAL, Literal: "Name", Row: 2, Colm: 10},
+		{Type: token.SEMICOLON, Literal: ",", Row: 2, Colm: 16},
+		{Type: token.STRING_LITERAL, Literal: "age", Row: 3, Colm: 2},
+		{Type: token.COLON, Literal: ":", Row: 3, Colm: 7},
+		{Type: token.NUMBER_LITERAL, Literal: "21", Row: 3, Colm: 9},
+		{Type: token.SEMICOLON, Literal: ",", Row: 3, Colm: 11},
+		{Type: token.STRING_LITERAL, Literal: "human", Row: 4, Colm: 2},
+		{Type: token.COLON, Literal: ":", Row: 4, Colm: 9},
+		{Type: token.TRUE, Literal: "true", Row: 4, Colm: 11},
+		{Type: token.SEMICOLON, Literal: ",", Row: 4, Colm: 15},
+	}
+	ind := 0
+	for tok := range lex {
+		exp := expected[ind]
+		if tok.Type != exp.Type {
+			t.Errorf("tok[%d].Type was expected to be %d, but got %d", ind, exp.Type, tok.Type)
+		}
+		if tok.Literal != exp.Literal {
+			t.Errorf("tok[%d].Literal was expected to be %s, but got %s", ind, exp.Literal, tok.Literal)
+		}
+		if tok.Row != exp.Row {
+			t.Errorf("tok[%d].Row was expected to be %d, but got %d", ind, exp.Row, tok.Row)
+		}
+		if tok.Colm != exp.Colm {
+			t.Errorf("tok[%d].Row was expected to be %d, but got %d", ind, exp.Colm, tok.Colm)
+		}
+		ind++
+		if ind == len(expected) {
+			break
+		}
+	}
+}
