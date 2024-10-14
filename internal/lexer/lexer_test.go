@@ -725,6 +725,7 @@ func TestLexer(t *testing.T) {
 		{Type: token.COLON, Literal: ":", Row: 11, Colm: 15},
 		{Type: token.UNDEFINED, Literal: `2.`, Row: 11, Colm: 17},
 		{Type: token.RIGHT_CURLY, Literal: "}", Row: 12, Colm: 1},
+		{Type: token.EOF, Literal: "", Row: 13, Colm: 2},
 	}
 	ind := 0
 	for tok := range lex {
