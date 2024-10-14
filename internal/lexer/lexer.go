@@ -23,10 +23,12 @@ func New(r io.Reader) iter.Seq[token.Token] {
 
 			n := len(input)
 			for ind < n {
+				ind, row, colm = skipWhiteSpace(input, ind, row, colm)
 				token, ind, row, colm = getToken(input, ind, row, colm)
 				if !yield(token) {
 					return
 				}
+				ind, row, colm = skipWhiteSpace(input, ind, row, colm)
 			}
 
 		}
@@ -84,8 +86,6 @@ func skipWhiteSpace(input string, ind int, row int, colm int) (int, int, int) {
 }
 
 func getToken(input string, ind int, row int, colm int) (token.Token, int, int, int) {
-	ind, row, colm = skipWhiteSpace(input, ind, row, colm)
-
 	var tok token.Token
 	switch input[ind] {
 	case 0:
@@ -111,7 +111,6 @@ func getToken(input string, ind int, row int, colm int) (token.Token, int, int, 
 		return getUndefined(input, ind, row, colm)
 	default:
 		var ok bool
-
 		tok, ok, ind, row, colm = tryGetKeyword(input, ind, row, colm)
 		if ok {
 			return tok, ind, row, colm

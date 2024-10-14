@@ -691,7 +691,8 @@ func TestLexer(t *testing.T) {
 		null
 	],
 	"indefi\'ned": 2.
-}`
+}    
+	`
 	lex := New(strings.NewReader(input))
 
 	expected := []token.Token{
