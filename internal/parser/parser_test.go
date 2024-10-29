@@ -140,6 +140,71 @@ func TestParserValid1(t *testing.T) {
 
 	compareNode(root, expeced, t)
 }
+
+func TestParserValid2(t *testing.T) {
+	input := `{
+		"id" : 11,
+		"name": "cabal",
+		"available" : true,
+		"orders": null
+	}`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	root, parserErr := parser.Parse()
+
+	if parserErr != nil {
+		t.Fatal(parserErr.Message)
+	}
+
+	if root == nil {
+		t.Fatal("Root is nil")
+	}
+
+	expeced := &ast.ObjectNode{
+		Type: ast.OBJECT,
+		Nodes: []*ast.KeyValNode{
+			{
+				Type: ast.KEYVAL,
+				Key:  token.Token{Type: token.STRING_LITERAL, Literal: "id"},
+				Val: &ast.NumberNode{
+					Type:  ast.NUMBER,
+					Token: token.Token{Type: token.NUMBER_LITERAL, Literal: "11"},
+				},
+			},
+			{
+				Type: ast.KEYVAL,
+				Key:  token.Token{Type: token.STRING_LITERAL, Literal: "name"},
+				Val: &ast.NumberNode{
+					Type:  ast.STRING,
+					Token: token.Token{Type: token.STRING_LITERAL, Literal: "cabal"},
+				},
+			},
+			{
+				Type: ast.KEYVAL,
+				Key:  token.Token{Type: token.STRING_LITERAL, Literal: "available"},
+				Val: &ast.NumberNode{
+					Type:  ast.BOOL,
+					Token: token.Token{Type: token.TRUE, Literal: "true"},
+				},
+			},
+			{
+				Type: ast.KEYVAL,
+				Key:  token.Token{Type: token.STRING_LITERAL, Literal: "orders"},
+				Val: &ast.NumberNode{
+					Type:  ast.NULL,
+					Token: token.Token{Type: token.NULL, Literal: "null"},
+				},
+			},
+		},
+	}
+
+	compareNode(root, expeced, t)
+}
 func TestParserValidUTF8(t *testing.T) {
 	input := `
 [
