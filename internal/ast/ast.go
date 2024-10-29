@@ -27,6 +27,7 @@ type Node interface {
 
 type LeafNode interface {
 	Node
+	Literal() string
 	leatNode()
 }
 
@@ -39,6 +40,9 @@ func (node *NullNode) NodeType() NodeType {
 	return node.Type
 }
 
+func (node *NullNode) Literal() string {
+	return node.Token.Literal
+}
 func (node *NullNode) leatNode() {}
 
 type BoolNode struct {
@@ -48,6 +52,10 @@ type BoolNode struct {
 
 func (node *BoolNode) NodeType() NodeType {
 	return node.Type
+}
+
+func (node *BoolNode) Literal() string {
+	return node.Token.Literal
 }
 
 func (node *BoolNode) leatNode() {}
@@ -61,6 +69,10 @@ func (node *NumberNode) NodeType() NodeType {
 	return node.Type
 }
 
+func (node *NumberNode) Literal() string {
+	return node.Token.Literal
+}
+
 func (node *NumberNode) leatNode() {}
 
 type StringNode struct {
@@ -72,6 +84,10 @@ func (node *StringNode) NodeType() NodeType {
 	return node.Type
 }
 
+func (node *StringNode) Literal() string {
+	return node.Token.Literal
+}
+
 func (node *StringNode) leatNode() {}
 
 type UndefinedNode struct {
@@ -81,6 +97,10 @@ type UndefinedNode struct {
 
 func (node *UndefinedNode) NodeType() NodeType {
 	return node.Type
+}
+
+func (node *UndefinedNode) Literal() string {
+	return node.Token.Literal
 }
 
 func (node *UndefinedNode) leatNode() {}
@@ -149,7 +169,7 @@ func NewKeyVal(key token.Token, val Node) *KeyValNode {
 
 type ObjectNode struct {
 	Type  NodeType
-	Nodes []Node
+	Nodes []*KeyValNode
 	keys  map[string]struct{}
 }
 
@@ -160,7 +180,7 @@ func (array *ObjectNode) NodeType() NodeType {
 func NewObjectNode() *ObjectNode {
 	return &ObjectNode{
 		Type:  OBJECT,
-		Nodes: make([]Node, 0),
+		Nodes: make([]*KeyValNode, 0),
 		keys:  make(map[string]struct{}),
 	}
 }
@@ -171,7 +191,7 @@ func (object *ObjectNode) Add(keyval *KeyValNode) bool {
 		return false
 	}
 
-	if _, ok := object.keys[keyval.Key.Literal]; !ok {
+	if _, ok := object.keys[keyval.Key.Literal]; ok {
 		return false
 	}
 

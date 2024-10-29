@@ -49,6 +49,10 @@ func (p *Parser) Parse() (ast.Node, *ParserError) {
 
 	root := p.parseNode()
 
+	if p.parserErr != nil {
+		return nil, p.parserErr
+	}
+
 	if root == nil {
 		panic("root is nil")
 	}
@@ -56,10 +60,6 @@ func (p *Parser) Parse() (ast.Node, *ParserError) {
 	if p.currToken.Type != token.EOF {
 		p.parserErr = newParserErr(fmt.Sprintf("expected EOF on row %d, colm %d but got %s",
 			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
-		return nil, p.parserErr
-	}
-
-	if p != nil {
 		return nil, p.parserErr
 	}
 
@@ -135,10 +135,8 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 		}
 		arrNode.Add(node)
 
-		p.NextToken()
-
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_SQUARE {
-			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or ] on row %d, colm%d got %s",
+			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or ] on row %d, colm %d got %s",
 				p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
 			return nil
 		}
@@ -184,17 +182,16 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 		if !ok {
 			p.parserErr = newParserErr(fmt.Sprintf("duplicate key on row %d, colm%d",
 				node.Key.Row, node.Key.Colm), node.Key.Row, node.Key.Colm)
+			return nil
 		}
 
-		p.NextToken()
-
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_CURLY {
-			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or ] on row %d, colm%d got %s",
+			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or } on row %d, colm %d got %s",
 				p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
 			return nil
 		}
 
-		if p.currToken.Type != token.SEMICOLON {
+		if p.currToken.Type == token.SEMICOLON {
 			p.NextToken()
 		}
 	}
