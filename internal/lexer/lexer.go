@@ -16,6 +16,7 @@ func New(r io.Reader) iter.Seq[token.Token] {
 		scanner := bufio.NewScanner(r)
 		scanner.Split(splitScannerFunc)
 
+		var lastToken token.Token
 		for scanner.Scan() {
 			input := scanner.Text()
 			ind := 0
@@ -25,6 +26,7 @@ func New(r io.Reader) iter.Seq[token.Token] {
 			for ind < n {
 				ind, row, colm = skipWhiteSpace(input, ind, row, colm)
 				token, ind, row, colm = getToken(input, ind, row, colm)
+				lastToken = token
 				if !yield(token) {
 					return
 				}
@@ -35,6 +37,11 @@ func New(r io.Reader) iter.Seq[token.Token] {
 
 		if err := scanner.Err(); err != nil {
 			yield(token.New(token.ERR, err.Error(), row, colm))
+			return
+		}
+
+		if lastToken.Type != token.EOF {
+			yield(token.New(token.EOF, "", row, colm))
 			return
 		}
 	}
