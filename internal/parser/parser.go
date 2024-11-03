@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"iter"
+	"log"
 
 	"github.com/lastvoidtemplar/json_formatter/internal/ast"
 	"github.com/lastvoidtemplar/json_formatter/internal/token"
@@ -43,7 +44,7 @@ func New(lex iter.Seq[token.Token]) (*Parser, error) {
 }
 
 // if EOF token is not found, there is a bug in the lexer
-var ErrEofNotFound = errors.New("expected EOF")
+var ErrExtraTokens = errors.New("expected EOF")
 
 // undefined token as a leaf
 var ErrUndefinedToken = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL")
@@ -52,13 +53,13 @@ var ErrUndefinedToken = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL
 var ErrMissingArrayClosingBracket = errors.New("expected ']'")
 
 // missing semicolon seperator in array element or missing closing square bracket
-var ErrMissingArraySeperator = errors.New("expected SEMICOLON or ']'")
+var ErrMissingArraySeparator = errors.New("expected SEMICOLON or ']'")
 
 // did not found closing curly bracket
 var ErrMissingObjectClosingBracket = errors.New("expected '}'")
 
 // missing semicolon seperator in object element or missing closing curly bracket
-var ErrMissingObjectSeperator = errors.New("expected SEMICOLON or '}'")
+var ErrMissingObjectSeparator = errors.New("expected SEMICOLON or '}'")
 
 // found duplacate keys
 var ErrDuplicateKeys = errors.New("duplicate keys")
@@ -67,9 +68,9 @@ var ErrDuplicateKeys = errors.New("duplicate keys")
 var ErrKeyNotString = errors.New("key must be string")
 
 // missing colon in keyval
-var ErrMissingKeyvalSeperator = errors.New("expectted COLON")
+var ErrMissingKeyvalSeparator = errors.New("expectted COLON")
 
-func (p *Parser) Parse() (ast.Node, *ParserError) {
+func (p *Parser) Parse() (ast.Node, error) {
 	defer p.stopLexer()
 
 	root := p.parseNode()
@@ -83,7 +84,7 @@ func (p *Parser) Parse() (ast.Node, *ParserError) {
 	}
 
 	if p.currToken.Type != token.EOF {
-		p.parserErr = newParserErr(ErrEofNotFound, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+		p.parserErr = newParserErr(ErrExtraTokens, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil, p.parserErr
 	}
 
@@ -110,7 +111,9 @@ func (p *Parser) parseNode() ast.Node {
 		return tok
 	}
 
-	return nil
+	// must be impossible to get here
+	log.Println(p.currToken)
+	panic("unknown token type")
 }
 
 func (p *Parser) parserLeaf() ast.LeafNode {
@@ -126,11 +129,13 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 	arrNode := ast.NewArrayNode()
 
 	p.NextToken()
+
+	if p.currToken.Type == token.EOF {
+		p.parserErr = newParserErr(ErrMissingArrayClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+		return nil
+	}
+
 	for p.currToken.Type != token.RIGHT_SQUARE {
-		if p.currToken.Type == token.EOF {
-			p.parserErr = newParserErr(ErrMissingArrayClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
-			return nil
-		}
 
 		node := p.parseNode()
 
@@ -143,8 +148,13 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 		}
 		arrNode.Add(node)
 
+		if p.currToken.Type == token.EOF {
+			p.parserErr = newParserErr(ErrMissingArrayClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+			return nil
+		}
+
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_SQUARE {
-			p.parserErr = newParserErr(ErrMissingArraySeperator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+			p.parserErr = newParserErr(ErrMissingArraySeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 			return nil
 		}
 
@@ -161,11 +171,12 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 
 	p.NextToken()
 
+	if p.currToken.Type == token.EOF {
+		p.parserErr = newParserErr(ErrMissingObjectClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+		return nil
+	}
+
 	for p.currToken.Type != token.RIGHT_CURLY {
-		if p.currToken.Type == token.EOF {
-			p.parserErr = newParserErr(ErrMissingObjectClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
-			return nil
-		}
 
 		node := p.parseKeyVal()
 
@@ -184,8 +195,13 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 			return nil
 		}
 
+		if p.currToken.Type == token.EOF {
+			p.parserErr = newParserErr(ErrMissingObjectClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+			return nil
+		}
+
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_CURLY {
-			p.parserErr = newParserErr(ErrMissingObjectSeperator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+			p.parserErr = newParserErr(ErrMissingObjectSeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 			return nil
 		}
 
@@ -207,7 +223,7 @@ func (p *Parser) parseKeyVal() *ast.KeyValNode {
 	p.NextToken()
 
 	if p.currToken.Type != token.COLON {
-		p.parserErr = newParserErr(ErrMissingKeyvalSeperator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+		p.parserErr = newParserErr(ErrMissingKeyvalSeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil
 	}
 
