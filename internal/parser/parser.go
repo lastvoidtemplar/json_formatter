@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"iter"
 	"log"
 
@@ -44,7 +43,34 @@ func New(lex iter.Seq[token.Token]) (*Parser, error) {
 	}, nil
 }
 
-func (p *Parser) Parse() (ast.Node, *ParserError) {
+// if EOF token is not found, there is a bug in the lexer
+var ErrExtraTokens = errors.New("expected EOF")
+
+// undefined token as a leaf
+var ErrUndefinedToken = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL")
+
+// did not found closing square bracket
+var ErrMissingArrayClosingBracket = errors.New("expected ']'")
+
+// missing semicolon seperator in array element or missing closing square bracket
+var ErrMissingArraySeparator = errors.New("expected SEMICOLON or ']'")
+
+// did not found closing curly bracket
+var ErrMissingObjectClosingBracket = errors.New("expected '}'")
+
+// missing semicolon seperator in object element or missing closing curly bracket
+var ErrMissingObjectSeparator = errors.New("expected SEMICOLON or '}'")
+
+// found duplacate keys
+var ErrDuplicateKeys = errors.New("duplicate keys")
+
+// key must be string
+var ErrKeyNotString = errors.New("key must be string")
+
+// missing colon in keyval
+var ErrMissingKeyvalSeparator = errors.New("expectted COLON")
+
+func (p *Parser) Parse() (ast.Node, error) {
 	defer p.stopLexer()
 
 	root := p.parseNode()
@@ -54,12 +80,11 @@ func (p *Parser) Parse() (ast.Node, *ParserError) {
 	}
 
 	if root == nil {
-		panic("root is nil")
+		panic("Couldn`t parse, but there was no parsing error")
 	}
 
 	if p.currToken.Type != token.EOF {
-		p.parserErr = newParserErr(fmt.Sprintf("expected EOF on row %d, colm %d but got %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+		p.parserErr = newParserErr(ErrExtraTokens, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil, p.parserErr
 	}
 
@@ -86,20 +111,14 @@ func (p *Parser) parseNode() ast.Node {
 		return tok
 	}
 
-	return nil
+	// must be impossible to get here
+	log.Println(p.currToken)
+	panic("unknown token type")
 }
 
 func (p *Parser) parserLeaf() ast.LeafNode {
-	if !isCurrLeaf(p.currToken) {
-		log.Println("Expecred leaf token")
-		p.parserErr = newParserErr(fmt.Sprintf("expected leaf on row %d, colm %d, but got %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
-		return nil
-	}
-
 	if p.currToken.Type == token.UNDEFINED {
-		p.parserErr = newParserErr(fmt.Sprintf("undefined token on row %d, colm %d - %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+		p.parserErr = newParserErr(ErrUndefinedToken, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil
 	}
 
@@ -107,22 +126,16 @@ func (p *Parser) parserLeaf() ast.LeafNode {
 }
 
 func (p *Parser) parseArray() *ast.ArrayNode {
-	if p.currToken.Type != token.LEFT_SQUARE {
-		log.Println("The starting token of array is not [")
-		p.parserErr = newParserErr(fmt.Sprintf("expected [ on row %d, colm %d, but got %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
-		return nil
-	}
-
 	arrNode := ast.NewArrayNode()
 
 	p.NextToken()
+
+	if p.currToken.Type == token.EOF {
+		p.parserErr = newParserErr(ErrMissingArrayClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+		return nil
+	}
+
 	for p.currToken.Type != token.RIGHT_SQUARE {
-		if p.currToken.Type == token.EOF {
-			p.parserErr = newParserErr(fmt.Sprintf("Expected ] on row %d, colm %d, but got EOF",
-				p.currToken.Row, p.currToken.Colm), p.currToken.Row, p.currToken.Colm)
-			return nil
-		}
 
 		node := p.parseNode()
 
@@ -131,13 +144,17 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 		}
 
 		if node == nil {
-			panic("Couldn`t parse array element")
+			panic("Couldn`t parse array element, but there was not parsing error")
 		}
 		arrNode.Add(node)
 
+		if p.currToken.Type == token.EOF {
+			p.parserErr = newParserErr(ErrMissingArrayClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+			return nil
+		}
+
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_SQUARE {
-			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or ] on row %d, colm %d got %s",
-				p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+			p.parserErr = newParserErr(ErrMissingArraySeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 			return nil
 		}
 
@@ -150,22 +167,16 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 }
 
 func (p *Parser) parseObject() *ast.ObjectNode {
-	if p.currToken.Type == token.EOF {
-		p.parserErr = newParserErr(fmt.Sprintf("Expected ] on row %d, colm %d, but got EOF",
-			p.currToken.Row, p.currToken.Colm), p.currToken.Row, p.currToken.Colm)
-		return nil
-	}
-
 	objNode := ast.NewObjectNode()
 
 	p.NextToken()
 
+	if p.currToken.Type == token.EOF {
+		p.parserErr = newParserErr(ErrMissingObjectClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
+		return nil
+	}
+
 	for p.currToken.Type != token.RIGHT_CURLY {
-		if p.currToken.Type == token.EOF {
-			p.parserErr = newParserErr(fmt.Sprintf("Expected ] on row %d, colm %d, but got EOF",
-				p.currToken.Row, p.currToken.Colm), p.currToken.Row, p.currToken.Colm)
-			return nil
-		}
 
 		node := p.parseKeyVal()
 
@@ -174,20 +185,23 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 		}
 
 		if node == nil {
-			panic("Couldn`t parse object element")
+			panic("Couldn`t parse object element, but there was no parsing error")
 		}
 
 		ok := objNode.Add(node)
 
 		if !ok {
-			p.parserErr = newParserErr(fmt.Sprintf("duplicate key on row %d, colm%d",
-				node.Key.Row, node.Key.Colm), node.Key.Row, node.Key.Colm)
+			p.parserErr = newParserErr(ErrDuplicateKeys, node.Key.Row, node.Key.Colm, "")
+			return nil
+		}
+
+		if p.currToken.Type == token.EOF {
+			p.parserErr = newParserErr(ErrMissingObjectClosingBracket, p.currToken.Row, p.currToken.Colm, "EOF")
 			return nil
 		}
 
 		if p.currToken.Type != token.SEMICOLON && p.currToken.Type != token.RIGHT_CURLY {
-			p.parserErr = newParserErr(fmt.Sprintf("expected SEMICOLON or } on row %d, colm %d got %s",
-				p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+			p.parserErr = newParserErr(ErrMissingObjectSeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 			return nil
 		}
 
@@ -201,8 +215,7 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 
 func (p *Parser) parseKeyVal() *ast.KeyValNode {
 	if p.currToken.Type != token.STRING_LITERAL {
-		p.parserErr = newParserErr(fmt.Sprintf("the key must be string on row %d, colm %d, but got %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+		p.parserErr = newParserErr(ErrKeyNotString, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil
 	}
 
@@ -210,8 +223,7 @@ func (p *Parser) parseKeyVal() *ast.KeyValNode {
 	p.NextToken()
 
 	if p.currToken.Type != token.COLON {
-		p.parserErr = newParserErr(fmt.Sprintf("expected COLON on row %d, colm %d, but got %s",
-			p.currToken.Row, p.currToken.Colm, p.currToken.Literal), p.currToken.Row, p.currToken.Colm)
+		p.parserErr = newParserErr(ErrMissingKeyvalSeparator, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil
 	}
 

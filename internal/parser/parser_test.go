@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestParserValid1(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
@@ -158,7 +159,7 @@ func TestParserValid2(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
@@ -235,7 +236,7 @@ func TestParserValidUTF8(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
@@ -373,5 +374,286 @@ func compareNode(actual ast.Node, expected ast.Node, t *testing.T) {
 		for i := 0; i < len(node.Nodes); i++ {
 			compareNode(node.Nodes[i], exp.Nodes[i], t)
 		}
+	}
+}
+
+func TestParserEmptyLexer(t *testing.T) {
+	input := ""
+	lex := lexer.New(strings.NewReader(input))
+	_, err := New(lex)
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if err != ErrEmptyLexer {
+		t.Fatalf("Expected ErrEmptyLexer, but got %s", err.Error())
+	}
+}
+
+func TestParserExtraTokens(t *testing.T) {
+	input := `{
+	
+	},`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrExtraTokens) {
+		t.Fatalf("Expected ErrorExtraTokens, but got %s", err.Error())
+	}
+}
+
+func TestParserUndefinedToken(t *testing.T) {
+	input := `A3`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrUndefinedToken) {
+		t.Fatalf("Expected ErrUndefinedToken, but got %s", err.Error())
+	}
+}
+
+func TestParserMissingArrayClosingBracket1(t *testing.T) {
+	input := `[
+		true,
+		"hello",
+		null
+		`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingArrayClosingBracket) {
+		t.Fatalf("Expected ErrMissingArrayClosingBracket, but got %s", err.Error())
+	}
+}
+
+func TestParserMissingArrayClosingBracket2(t *testing.T) {
+	input := `[
+		`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingArrayClosingBracket) {
+		t.Fatalf("Expected ErrMissingArrayClosingBracket, but got %s", err.Error())
+	}
+}
+func TestParserMissingArraySeparator(t *testing.T) {
+	input := `[
+		true,
+		"hello"
+		null
+		]`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingArraySeparator) {
+		t.Fatalf("Expected ErrMissingArrayClosingBracket, but got %s", err.Error())
+	}
+}
+
+func TestParserKeyvalKeysNotString(t *testing.T) {
+	input := `{
+		123: true
+	}`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrKeyNotString) {
+		t.Fatalf("Expected ErrKeyNotString, but got %s", err.Error())
+	}
+}
+
+func TestParserKeyvalMissingSeparator(t *testing.T) {
+	input := `{
+		"key" "val"
+	}`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingKeyvalSeparator) {
+		t.Fatalf("Expected ErrMissingKeyvalSeparator, but got %s", err.Error())
+	}
+}
+func TestParserMissingObjectClosingBracket1(t *testing.T) {
+	input := `{
+		"key1": "val1",
+		"key2": "val2"
+		`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingObjectClosingBracket) {
+		t.Fatalf("Expected ErrMissingObjectClosingBracket, but got %s", err.Error())
+	}
+}
+
+func TestParserMissingObjectClosingBracket2(t *testing.T) {
+	input := `{
+		`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingObjectClosingBracket) {
+		t.Fatalf("Expected ErrMissingObjectClosingBracket, but got %s", err.Error())
+	}
+}
+func TestParserMissingObjectSeparator(t *testing.T) {
+	input := `{
+		"key1": "val1"
+		"key2": "val2"
+		}`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrMissingObjectSeparator) {
+		t.Fatalf("Expected ErrMissingObjectSeparator, but got %s", err.Error())
+	}
+}
+
+func TestParserDuplicateKeys(t *testing.T) {
+	input := `{
+		"key1": "val1",
+		"key1": "val2"
+		}`
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrDuplicateKeys) {
+		t.Fatalf("Expected ErrDuplicateKeys, but got %s", err.Error())
+	}
+}
+
+func TestParserErrPropragation(t *testing.T) {
+	input := `{
+		"key1": [
+			A3
+		]
+	}`
+
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrUndefinedToken) {
+		t.Fatalf("Expected ErrUndefinedToken, but got %s", err.Error())
 	}
 }
