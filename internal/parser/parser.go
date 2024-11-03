@@ -3,7 +3,6 @@ package parser
 import (
 	"errors"
 	"iter"
-	"log"
 
 	"github.com/lastvoidtemplar/json_formatter/internal/ast"
 	"github.com/lastvoidtemplar/json_formatter/internal/token"
@@ -47,7 +46,7 @@ func New(lex iter.Seq[token.Token]) (*Parser, error) {
 var ErrExtraTokens = errors.New("expected EOF")
 
 // undefined token as a leaf
-var ErrUndefinedToken = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL")
+var ErrInvalidType = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL")
 
 // did not found closing square bracket
 var ErrMissingArrayClosingBracket = errors.New("expected ']'")
@@ -65,7 +64,7 @@ var ErrMissingObjectSeparator = errors.New("expected SEMICOLON or '}'")
 var ErrDuplicateKeys = errors.New("duplicate keys")
 
 // key must be string
-var ErrKeyNotString = errors.New("key must be string")
+var ErrKeyNotString = errors.New("expected STRING")
 
 // missing colon in keyval
 var ErrMissingKeyvalSeparator = errors.New("expectted COLON")
@@ -111,14 +110,13 @@ func (p *Parser) parseNode() ast.Node {
 		return tok
 	}
 
-	// must be impossible to get here
-	log.Println(p.currToken)
-	panic("unknown token type")
+	p.parserErr = newParserErr(ErrInvalidType, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+	return nil
 }
 
 func (p *Parser) parserLeaf() ast.LeafNode {
 	if p.currToken.Type == token.UNDEFINED {
-		p.parserErr = newParserErr(ErrUndefinedToken, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+		p.parserErr = newParserErr(ErrInvalidType, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
 		return nil
 	}
 
@@ -160,6 +158,11 @@ func (p *Parser) parseArray() *ast.ArrayNode {
 
 		if p.currToken.Type == token.SEMICOLON {
 			p.NextToken()
+
+			if p.currToken.Type == token.RIGHT_SQUARE {
+				p.parserErr = newParserErr(ErrInvalidType, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+				return nil
+			}
 		}
 	}
 
@@ -207,6 +210,11 @@ func (p *Parser) parseObject() *ast.ObjectNode {
 
 		if p.currToken.Type == token.SEMICOLON {
 			p.NextToken()
+
+			if p.currToken.Type == token.RIGHT_CURLY {
+				p.parserErr = newParserErr(ErrInvalidType, p.currToken.Row, p.currToken.Colm, p.currToken.Literal)
+				return nil
+			}
 		}
 	}
 

@@ -428,8 +428,8 @@ func TestParserUndefinedToken(t *testing.T) {
 		t.Fatal("Expected error, but got nil")
 	}
 
-	if !errors.Is(err, ErrUndefinedToken) {
-		t.Fatalf("Expected ErrUndefinedToken, but got %s", err.Error())
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
 	}
 }
 
@@ -498,6 +498,54 @@ func TestParserMissingArraySeparator(t *testing.T) {
 
 	if !errors.Is(err, ErrMissingArraySeparator) {
 		t.Fatalf("Expected ErrMissingArrayClosingBracket, but got %s", err.Error())
+	}
+}
+
+func TestParseArrayExtraSeparator1(t *testing.T) {
+	input := `[
+		true,
+		false,
+	]`
+
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
+	}
+}
+
+func TestParseArrayExtraSeparator2(t *testing.T) {
+	input := `[
+		true,,
+		false
+	]`
+
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
 	}
 }
 
@@ -653,7 +701,55 @@ func TestParserErrPropragation(t *testing.T) {
 		t.Fatal("Expected error, but got nil")
 	}
 
-	if !errors.Is(err, ErrUndefinedToken) {
-		t.Fatalf("Expected ErrUndefinedToken, but got %s", err.Error())
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
+	}
+}
+
+func TestParseObjectExtraSeparator1(t *testing.T) {
+	input := `{
+		"key1": "val1",
+		"key2": "val2",
+	}`
+
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
+	}
+}
+
+func TestParseObjectExtraSeparator2(t *testing.T) {
+	input := `{
+		"key1": "val1",,
+		"key2": "val2"
+	}`
+
+	lex := lexer.New(strings.NewReader(input))
+	parser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = parser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrKeyNotString) {
+		t.Fatalf("Expected ErrKeyNotString, but got %s", err.Error())
 	}
 }
