@@ -10,3 +10,6 @@ test_parser:
 	@go test -cover ./internal/parser
 
 test: test_lexer test_parser 
+
+coverage:
+	@bash scripts/coverage.sh
