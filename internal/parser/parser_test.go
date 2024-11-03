@@ -39,7 +39,7 @@ func TestParserValid1(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
@@ -158,7 +158,7 @@ func TestParserValid2(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
@@ -235,7 +235,7 @@ func TestParserValidUTF8(t *testing.T) {
 	root, parserErr := parser.Parse()
 
 	if parserErr != nil {
-		t.Fatal(parserErr.Message)
+		t.Fatal(parserErr.Error())
 	}
 
 	if root == nil {
