@@ -46,7 +46,7 @@ func New(lex iter.Seq[token.Token]) (*Parser, error) {
 var ErrExtraTokens = errors.New("expected EOF")
 
 // undefined token as a leaf
-var ErrInvalidType = errors.New("expected STRING, NUMBER, TRUE, FALSE or NULL")
+var ErrInvalidType = errors.New("expected STRING, NUMBER, TRUE, FALSE, NULL, '[' or '{'")
 
 // did not found closing square bracket
 var ErrMissingArrayClosingBracket = errors.New("expected ']'")
