@@ -753,3 +753,26 @@ func TestParseObjectExtraSeparator2(t *testing.T) {
 		t.Fatalf("Expected ErrKeyNotString, but got %s", err.Error())
 	}
 }
+
+func TestParserMultilineString(t *testing.T) {
+	input := `{
+		"key1":"value-
+		value"
+	}`
+	lex := lexer.New(strings.NewReader(input))
+	paerser, err := New(lex)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = paerser.Parse()
+
+	if err == nil {
+		t.Fatal("Expected error, but got nil")
+	}
+
+	if !errors.Is(err, ErrInvalidType) {
+		t.Fatalf("Expected ErrInvalidType, but got %s", err.Error())
+	}
+}
