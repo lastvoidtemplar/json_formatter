@@ -1,2 +1,4 @@
 coverage.out
 coverage.html
+web/template/*_templ.go
+tmp

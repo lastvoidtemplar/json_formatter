@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/lastvoidtemplar/json_formatter/internal/server"
 
 func main() {
-	fmt.Println("Json formatter")
+	server.New().Run(3000)
 }

@@ -13,3 +13,9 @@ test: test_lexer test_parser
 
 coverage:
 	@bash scripts/coverage.sh
+
+build_web:
+	@templ generate
+
+build: build_web
+	@go build -o tmp/main cmd/main.go
